@@ -51,8 +51,13 @@ ADMIN_EMAIL="odoo@example.com"
 ## https://github.com/odoo/odoo/wiki/Wkhtmltopdf ):
 ## https://www.odoo.com/documentation/16.0/administration/install.html
 
+# Check if the operating system is Ubuntu 24.04
+if [[ $(lsb_release -r -s) == "24.04" ]]; then
+    WKHTMLTOX_X64="https://packages.ubuntu.com/jammy/wkhtmltopdf"
+    WKHTMLTOX_X32="https://packages.ubuntu.com/jammy/wkhtmltopdf"
+    #No Same link works for both 64 and 32-bit on Ubuntu 24.04
 # Check if the operating system is Ubuntu 22.04
-if [[ $(lsb_release -r -s) == "22.04" ]]; then
+elif [[ $(lsb_release -r -s) == "22.04" ]]; then
     WKHTMLTOX_X64="https://packages.ubuntu.com/jammy/wkhtmltopdf"
     WKHTMLTOX_X32="https://packages.ubuntu.com/jammy/wkhtmltopdf"
     #No Same link works for both 64 and 32-bit on Ubuntu 22.04
@@ -189,7 +194,7 @@ venv_path="/$OE_HOME/$OE_USER-venv"
 sudo su $OE_USER -c "python3 -m venv $venv_path"
 # Activate the virtual environment using sudo
 echo -e "\n---- Install python packages/requirements ----"
-sudo -H -u "$OE_USER" bash -c "source $venv_path/bin/activate && pip3 install wheel && pip3 install -r $OE_HOME_EXT/requirements.txt && deactivate"
+sudo -H -u "$OE_USER" bash -c "source $venv_path/bin/activate && pip3 install wheel && pip3 install setuptools && pip3 install -r $OE_HOME_EXT/requirements.txt && deactivate"
 
 echo -e "\n---- Setting permissions on home folder ----"
 sudo chown -R $OE_USER:$OE_USER $OE_HOME/*
@@ -374,7 +379,8 @@ else
 fi
 
 echo -e "* Starting Odoo Service"
-sudo su root -c "/etc/init.d/$OE_CONFIG start"
+#sudo su root -c "/etc/init.d/$OE_CONFIG start"
+sudo service odoo start
 echo "-----------------------------------------------------------"
 echo "Done! The Odoo server is up and running. Specifications:"
 echo "Port: $OE_PORT"
