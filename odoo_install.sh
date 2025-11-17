@@ -92,7 +92,7 @@ sudo apt-get install libpq-dev -y
 #--------------------------------------------------
 echo -e "\n---- Install PostgreSQL Server ----"
 if [ $INSTALL_POSTGRESQL_FOURTEEN = "True" ]; then
-    echo -e "\n---- Installing postgreSQL V14 due to the user it's choise ----"
+    echo -e "\n---- Installing postgreSQL V14 due to the user's choice ----"
     sudo curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc|sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/postgresql.gpg
     sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
     sudo apt-get update
@@ -131,7 +131,10 @@ if [ $INSTALL_WKHTMLTOPDF = "True" ]; then
   sudo wget $_url
   
 
-  if [[ $(lsb_release -r -s) == "22.04" ]]; then
+  if [[ $(lsb_release -r -s) == "24.04" ]]; then
+    # Ubuntu 24.04 LTS
+    sudo apt install wkhtmltopdf -y
+  elif [[ $(lsb_release -r -s) == "22.04" ]]; then
     # Ubuntu 22.04 LTS
     sudo apt install wkhtmltopdf -y
   else
@@ -399,9 +402,9 @@ echo "User PostgreSQL: $OE_USER"
 echo "Code location: $OE_USER"
 echo "Addons folder: $OE_USER/$OE_CONFIG/addons/"
 echo "Password superadmin (database): $OE_SUPERADMIN"
-echo "Start Odoo service: sudo service $OE_CONFIG start"
-echo "Stop Odoo service: sudo service $OE_CONFIG stop"
-echo "Restart Odoo service: sudo service $OE_CONFIG restart"
+echo "Start Odoo service: sudo service $OE_USER start"
+echo "Stop Odoo service: sudo service $OE_USER stop"
+echo "Restart Odoo service: sudo service $OE_USER restart"
 if [ $INSTALL_NGINX = "True" ]; then
   echo "Nginx configuration file: /etc/nginx/sites-available/$WEBSITE_NAME"
 fi
