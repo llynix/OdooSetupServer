@@ -76,7 +76,7 @@ echo -e "\n---- Update Server ----"
 # libpng12-0 dependency for wkhtmltopdf for older Ubuntu versions
 # sudo add-apt-repository "deb http://mirrors.kernel.org/ubuntu/ xenial main"
 sudo apt-get update
-sudo apt-get upgrade -y
+sudo apt-get -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" upgrade -y
 sudo apt-get install libpq-dev -y
 
 #--------------------------------------------------
