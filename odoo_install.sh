@@ -330,7 +330,7 @@ server {
     proxy_redirect off;
   }
 
-  location /longpolling {
+  location /websocket {
     proxy_pass http://127.0.0.1:$LONGPOLLING_PORT;
   }
 
