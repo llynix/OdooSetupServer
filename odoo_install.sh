@@ -127,9 +127,11 @@ if [ $INSTALL_WKHTMLTOPDF = "True" ]; then
       _url=$WKHTMLTOX_X32
   fi
   sudo wget $_url
-  
 
-  if [[ $(lsb_release -r -s) == "22.04" ]]; then
+  if [[ $(lsb_release -r -s) == "24.04" ]]; then
+    # Ubuntu 24.04 LTS
+    sudo apt install wkhtmltopdf -y
+  elif [[ $(lsb_release -r -s) == "22.04" ]]; then
     # Ubuntu 22.04 LTS
     sudo apt install wkhtmltopdf -y
   else
