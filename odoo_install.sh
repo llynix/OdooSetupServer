@@ -44,6 +44,26 @@ LONGPOLLING_PORT="8072"
 ENABLE_SSL="True"
 # Provide Email to register ssl certificate
 ADMIN_EMAIL="odoo@example.com"
+
+
+install_wkhtmltopdf_from_ubuntu() {
+  sudo apt-get update -y
+  if sudo apt-get install -y wkhtmltopdf; then
+    echo "wkhtmltopdf installed from Ubuntu repositories ($ARCH_DEB)."
+    return 0
+  fi
+  return 1
+}
+
+wkhtml_create_symlinks_if_needed() {
+  # symlinks
+  if [ -x /usr/local/bin/wkhtmltopdf ] && ! command -v wkhtmltopdf >/dev/null 2>&1; then
+    sudo ln -s /usr/local/bin/wkhtmltopdf /usr/bin || true
+  fi
+  if [ -x /usr/local/bin/wkhtmltoimage ] && ! command -v wkhtmltoimage >/dev/null 2>&1; then
+    sudo ln -s /usr/local/bin/wkhtmltoimage /usr/bin || true
+  fi
+}
 ##
 ###  WKHTMLTOPDF download links
 ## === Ubuntu Trusty x64 & x32 === (for other distributions please replace these two links,
@@ -121,39 +141,30 @@ sudo npm install -g rtlcss
 # Install Wkhtmltopdf if needed
 #--------------------------------------------------
 if [ $INSTALL_WKHTMLTOPDF = "True" ]; then
-  echo -e "\n---- Install wkhtml and place shortcuts on correct place for ODOO 13 ----"
-  #pick up correct one from x64 & x32 versions:
-  if [ "`getconf LONG_BIT`" == "64" ];then
-      _url=$WKHTMLTOX_X64
-  else
-      _url=$WKHTMLTOX_X32
-  fi
-  sudo wget $_url
-  
+  echo -e "\n---- Installing wkhtmltopdf (architecture detected: $ARCH_DEB) ----"
 
-  if [[ $(lsb_release -rs 2>/dev/null) == "24.04" ]]; then
-    # Ubuntu 24.04 LTS
-    sudo apt install wkhtmltopdf -y
-  elif [[ $(lsb_release -r -s) == "22.04" ]]; then
-    # Ubuntu 22.04 LTS
-    sudo apt install wkhtmltopdf -y
+  if install_wkhtmltopdf_from_ubuntu; then
+    :
   else
-      # For older versions of Ubuntu
-    sudo gdebi --n `basename $_url`
+    echo -e "\n---- Could not install from the Ubuntu repositories ----."
   fi
-  
-  sudo ln -s /usr/local/bin/wkhtmltopdf /usr/bin
-  sudo ln -s /usr/local/bin/wkhtmltoimage /usr/bin
+
+  echo -e "\n---- Ensure that the links are in /usr/local/bin ----"
+  wkhtml_create_symlinks_if_needed
+
+  if command -v wkhtmltopdf >/dev/null 2>&1; then
+    echo -e "\n---- wkhtmltopdf available at: $(command -v wkhtmltopdf) ----"
+  else
+    echo -e "\n----- WARNING: wkhtmltopdf was not installed. You can install it manually later ----"
+  fi
 else
-  echo "Wkhtmltopdf isn't installed due to the choice of the user!"
+  echo -e "\n---- Wkhtmltopdf will not be installed at the user's choice ----"
 fi
 
 echo -e "\n---- Create ODOO system user ----"
 sudo adduser --system --quiet --shell=/bin/bash --home=$OE_HOME --gecos 'ODOO' --group $OE_USER
 #The user should also be added to the sudo'ers group.
 sudo adduser $OE_USER sudo
-
-
 
 echo -e "\n---- Create Log directory ----"
 sudo mkdir /var/log/$OE_USER
