@@ -103,7 +103,15 @@ echo -e "\n---- Update Server ----"
 # sudo add-apt-repository universe
 # libpng12-0 dependency for wkhtmltopdf for older Ubuntu versions
 # sudo add-apt-repository "deb http://mirrors.kernel.org/ubuntu/ xenial main"
-sudo apt-get update -y
+sudo apt-get update
+# For some reason openssh likes to prompt you to keep the old file.
+# Hopefully this does it automatically
+sudo DEBIAN_FRONTEND=noninteractive \
+UCF_FORCE_CONFFOLD=1 \
+UCF_FORCE_CONFDEF=1 \
+apt -o Dpkg::Options::="--force-confdef" \
+-o Dpkg::Options::="--force-confold" \
+install openssh-server -y
 sudo apt-get upgrade -y
 sudo apt-get install -y libpq-dev
 
