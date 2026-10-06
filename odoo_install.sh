@@ -17,6 +17,7 @@
 OE_USER="odoo"
 OE_HOME="/$OE_USER"
 OE_HOME_EXT="/$OE_USER/${OE_USER}-server"
+OE_VENV="$OE_HOME/venv"
 # The default port where this Odoo instance will run under (provided you use the command -c in the terminal)
 # Set to true if you want to install it, false if you don't need it or have it already installed.
 INSTALL_WKHTMLTOPDF="True"
@@ -44,12 +45,6 @@ LONGPOLLING_PORT="8072"
 ENABLE_SSL="True"
 # Provide Email to register ssl certificate
 ADMIN_EMAIL="odoo@example.com"
-
-# Helper: pip install with optional --break-system-packages (Ubuntu 24.04 / PEP 668)
-pip_install() {
-    sudo -H pip3 install "$@"
-}
-##
 
 ## ### WKHTMLTOPDF download & arch detection (x86/x86_64/ARM) ##
 # Installed from the Ubuntu 24.04 repositories
@@ -155,12 +150,6 @@ echo -e "\n--- Installing Python 3 + pip3 --"
 sudo apt-get install -y python3 python3-pip
 sudo apt-get install git python3-cffi build-essential wget python3-dev python3-venv python3-wheel libxslt-dev libzip-dev libldap2-dev libsasl2-dev python3-setuptools node-less libpng-dev libjpeg-dev gdebi -y
 
-echo -e "\n---- Install python packages/requirements ----"
-pip_install -r https://github.com/odoo/odoo/raw/${OE_VERSION}/requirements.txt
-
-# Extra: ensure phonenumbers is installed
-pip_install phonenumbers
-
 echo -e "\n---- Installing nodeJS NPM and rtlcss for LTR support ----"
 sudo apt-get install nodejs npm -y
 sudo npm install -g rtlcss
@@ -206,9 +195,20 @@ sudo chown $OE_USER:$OE_USER /var/log/$OE_USER
 echo -e "\n==== Installing ODOO Server ===="
 sudo git clone --depth 1 --branch $OE_VERSION https://www.github.com/odoo/odoo $OE_HOME_EXT/
 
+
+echo -e "\n---- Create Python virtual environment ----"
+sudo -u $OE_USER python3 -m venv $OE_VENV
+sudo -u $OE_USER $OE_VENV/bin/pip3 install --upgrade pip
+
+echo -e "\n---- Install python packages/requirements in virtual environment ----"
+sudo -u $OE_USER $OE_VENV/bin/pip3 install -r https://github.com/odoo/odoo/raw/${OE_VERSION}/requirements.txt
+
+# Extra: ensure phonenumbers is installed
+sudo -u $OE_USER $OE_VENV/bin/pip3 install phonenumbers
+
 if [ $IS_ENTERPRISE = "True" ]; then
     # Odoo Enterprise install!
-    pip_install psycopg2-binary pdfminer.six
+    sudo -u $OE_USER $OE_VENV/bin/pip3 install psycopg2-binary pdfminer.six
     sudo su $OE_USER -c "mkdir $OE_HOME/enterprise"
     sudo su $OE_USER -c "mkdir $OE_HOME/enterprise/addons"
 
@@ -225,7 +225,7 @@ if [ $IS_ENTERPRISE = "True" ]; then
 
     echo -e "\n---- Added Enterprise code under $OE_HOME/enterprise/addons ----"
     echo -e "\n---- Installing Enterprise specific libraries ----"
-    pip_install num2words ofxparse dbfread ebaysdk firebase_admin pyOpenSSL
+    sudo -u $OE_USER $OE_VENV/bin/pip3 install num2words ofxparse dbfread ebaysdk firebase_admin pyOpenSSL
     sudo npm install -g less
     sudo npm install -g less-plugin-clean-css
 fi
@@ -233,18 +233,6 @@ fi
 echo -e "\n---- Create custom module directory ----"
 sudo su $OE_USER -c "mkdir $OE_HOME/custom"
 sudo su $OE_USER -c "mkdir $OE_HOME/custom/addons"
-
-#--------------------------------------------------
-# Install Dependencies of ODOO
-#--------------------------------------------------
-echo -e "\n--- Installing Python 3 + pip3 --"
-# Path to the virtual environment
-venv_path="/$OE_HOME/$OE_USER-venv"
-#Create a new Python virtual environment for Odoo
-sudo su $OE_USER -c "python3 -m venv $venv_path"
-# Activate the virtual environment using sudo
-echo -e "\n---- Install python packages/requirements ----"
-sudo -H -u "$OE_USER" bash -c "source $venv_path/bin/activate && pip3 install wheel && pip3 install setuptools && pip3 install watchdog && pip3 install -r $OE_HOME_EXT/requirements.txt && deactivate"
 
 echo -e "\n---- Setting permissions on home folder ----"
 sudo chown -R $OE_USER:$OE_USER $OE_HOME/*
@@ -282,7 +270,7 @@ sudo chmod 640 /etc/${OE_CONFIG}.conf
 
 echo -e "* Create startup file"
 sudo su root -c "echo '#!/bin/sh' >> $OE_HOME_EXT/start.sh"
-sudo su root -c "echo 'sudo -u $OE_USER $OE_HOME_EXT/odoo-bin --config=/etc/${OE_CONFIG}.conf' >> $OE_HOME_EXT/start.sh"
+sudo su root -c "echo 'sudo -u $OE_USER $OE_VENV/bin/python3 $OE_HOME_EXT/odoo-bin --config=/etc/${OE_CONFIG}.conf' >> $OE_HOME_EXT/start.sh"
 sudo chmod 755 $OE_HOME_EXT/start.sh
 
 #--------------------------------------------------
@@ -304,7 +292,7 @@ cat <<EOF > ~/$OE_CONFIG
 # Description: ODOO Business Applications
 ### END INIT INFO
 PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
-DAEMON=$OE_HOME/$OE_USER-venv/bin/python3 $OE_HOME/$OE_CONFIG/odoo-bin
+DAEMON=$OE_VENV/bin/python3
 NAME=$OE_CONFIG
 DESC=$OE_CONFIG
 # Specify the user name (Default: odoo).
@@ -314,7 +302,7 @@ CONFIGFILE="/etc/${OE_CONFIG}.conf"
 # pidfile
 PIDFILE=/var/run/\${NAME}.pid
 # Additional options that are passed to the Daemon.
-DAEMON_OPTS="-c \$CONFIGFILE"
+DAEMON_OPTS="$OE_HOME_EXT/odoo-bin -c \$CONFIGFILE"
 [ -x \$DAEMON ] || exit 0
 [ -f \$CONFIGFILE ] || exit 0
 checkpid() {
