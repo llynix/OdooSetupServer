@@ -47,11 +47,7 @@ ADMIN_EMAIL="odoo@example.com"
 
 # Helper: pip install with optional --break-system-packages (Ubuntu 24.04 / PEP 668)
 pip_install() {
-  if pip3 help install 2>/dev/null | grep -q -- '--break-system-packages'; then
-    sudo -H pip3 install --break-system-packages "$@"
-else
     sudo -H pip3 install "$@"
-fi
 }
 ##
 
